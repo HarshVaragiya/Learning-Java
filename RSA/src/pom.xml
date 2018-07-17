@@ -1,0 +1,8 @@
+<!-- Add this to POM.XML File if you use Maven to Build Your Projects-->
+<!-- Apache Common Codecs for Base64 ENcoding and Decoding           -->
+<!-- https://mvnrepository.com/artifact/commons-codec/commons-codec  -->
+<dependency>
+    <groupId>commons-codec</groupId>
+    <artifactId>commons-codec</artifactId>
+    <version>1.11</version>
+</dependency>
