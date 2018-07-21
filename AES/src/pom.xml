@@ -1,0 +1,15 @@
+<!-- Only Apache Codecs is necessary, Guava is not. i tried, had some problems so using Apache -->
+  
+  <!-- https://mvnrepository.com/artifact/commons-codec/commons-codec -->  
+<dependency>
+    <groupId>commons-codec</groupId>
+    <artifactId>commons-codec</artifactId>
+    <version>1.11</version>
+</dependency>
+
+<!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+<dependency>
+    <groupId>com.google.guava</groupId>
+    <artifactId>guava</artifactId>
+    <version>25.1-jre</version>
+</dependency>
