@@ -1,3 +1,5 @@
+package helloworld;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,18 +11,22 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
 
-import org.apache.commons.codec.binary.Base64;
+import java.util.Base64;
+import javax.crypto.spec.PBEKeySpec;
 
 /**
  * @author Harsh Varagiya
- * RSA Class for Asymmetric Key Cryptography
- * To implement RSA And to Encrypt Data,Decrypt Data, or Generate RSA Keys.
+ * RSA Class for Public Key Cryptography.
+ *   -> Generation of Random/Deterministic RSA Keys
+ *   -> Encryption/Decryption using RSA Keys
  */
 
 public class RSA{
@@ -48,22 +54,47 @@ public class RSA{
 		this.privateKey = pair.getPrivate();
 		this.publicKey = pair.getPublic();
 	}
-	public void showPrivateKey() {
-		System.out.println(Base64.encodeBase64String(this.privateKey.getEncoded()));
+	
+	public byte[] DBSGF(String Data,byte[] salt) throws Exception {
+		// Data Based Seed Generation Function 
+		byte[] ret = hashPassword(Data.toCharArray(),salt,50000,512);
+		return ret;
 	}
-	public void showPublicKey() {
-		System.out.println(Base64.encodeBase64String(this.publicKey.getEncoded()));
+	
+	public byte[] hashPassword(final char[] password, final byte[] salt, final int iterations, final int keyLength) throws Exception {
+            SecretKeyFactory skf = SecretKeyFactory.getInstance( "PBKDF2WithHmacSHA512" );
+            PBEKeySpec specs = new PBEKeySpec( password, salt, iterations, keyLength);
+            SecretKey key = skf.generateSecret(specs);
+            byte[] res = key.getEncoded();
+            System.out.println("Seed Data : " + (Base64.getEncoder().encodeToString(res)));
+            return res;
+	}
+	
+	public void createDeterministicKeys(int keylength,String password,String salt) throws Exception{
+		SecureRandom not_random=SecureRandom.getInstance("SHA1PRNG");
+		not_random.setSeed(DBSGF(password,salt.getBytes()));
+		this.keyGen=KeyPairGenerator.getInstance("RSA");
+		this.keyGen.initialize(keylength, not_random);
+		this.pair=keyGen.generateKeyPair();
+		this.publicKey = this.pair.getPublic();
+		this.privateKey = this.pair.getPrivate();
+	}
+	
+	public String getPrivateKey() {
+		return Base64.getEncoder().encodeToString((this.privateKey.getEncoded()));
+	}
+	public String getPublicKey() {
+		return Base64.getEncoder().encodeToString((this.publicKey.getEncoded()));
 	}
 	
 	public String DecryptText(String cipherText) throws Exception {
 		cipher.init(Cipher.DECRYPT_MODE, this.privateKey);
-	    return new String(cipher.doFinal(Base64.decodeBase64(cipherText)), "UTF-8");
+	    return new String(cipher.doFinal(Base64.getDecoder().decode(cipherText)),"UTF-8");
 	}
 	
 	public String EncryptText(String plainText) throws Exception {
 		cipher.init(Cipher.ENCRYPT_MODE, this.publicKey);
-	    byte[] cipherText = cipher.doFinal(plainText.getBytes());
-	    return Base64.encodeBase64String(cipher.doFinal(plainText.getBytes("UTF-8")));
+	    return Base64.getEncoder().encodeToString((cipher.doFinal(plainText.getBytes("UTF-8"))));
 	}
 	
 	private void writeOnDisk(String path, byte[] key) throws IOException {
@@ -75,9 +106,7 @@ public class RSA{
 		fos.close();
 	}
 	
-	public void SaveKeys(String path) throws IOException{
-		String private_path = path + "/PrivateKey";
-		String public_path  = path + "/PublicKey";
+	public void SaveKeys(String private_path,String public_path) throws IOException{
 		this.writeOnDisk(private_path, this.privateKey.getEncoded());
 		this.writeOnDisk(public_path, this.publicKey.getEncoded());
 	}
@@ -110,28 +139,14 @@ public class RSA{
 		else return false;
 	}
 	
-    // Main  
-	
-	public static void main(String[] args) throws Exception { //Too many Exceptions to Write ! LAZY AF
-		
-		RSA keyOne;
-		keyOne = new RSA();
-		
-		keyOne.createKeys(1024);                 // 1024 Bits is Good Enough
-		keyOne.SaveKeys("RSA");                  // Path = /RSA/Keys
-		
-		//keyOne.importKeys(new String("RSA/publickey"), new String("RSA/privatekey"));
-		
-		//keyOne.importPublicKey(new String("RSA/publickey"));
-		System.out.print("Public Key  : ");keyOne.showPublicKey();
-		//keyOne.importPrivateKey(new String("RSA/privatekey"));
-		System.out.print("Private Key : ");keyOne.showPrivateKey();
-		
-		String str = "Test Something Out Here ! ";
-		String enc = keyOne.EncryptText(str); 
-		System.out.println("Cipher Text : " + enc);
-		String ret = keyOne.DecryptText(enc);
-		System.out.println("Plain Text  : " + ret);
+	/*
+	public boolean CanVerify() {
+		if(this.publicKey != null)return true;
+		else return false;
 	}
-
+	public boolean CanSign() {
+		if(this.privateKey != null)return true;
+		else return false;
+	}
+	*/
 }
